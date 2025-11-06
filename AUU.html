@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Manufacturing Optimization</title>
+    <style>
+        /* --- Basic Styling --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f6;
+            color: #333;
+            margin: 0;
+        }
+        
+        /* --- Login Overlay --- */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f2f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #login-box {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 320px;
+            text-align: center;
+        }
+        #login-box h2 { margin-top: 0; margin-bottom: 1.5rem; color: #262730; }
+        #login-box .input-group { margin-bottom: 1rem; text-align: left; }
+        #login-box label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #555; }
+        #login-box input[type="text"],
+        #login-box input[type="password"],
+        #login-box select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        #login-box .login-button {
+            width: 100%;
+            background-color: #0068c9;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        #login-box .login-button:hover { background-color: #0056a8; }
+        #login-error { color: #d93025; margin-top: 1rem; font-size: 0.9rem; display: none; }
+        #login-hint { font-size: 0.85rem; color: #666; margin-top: 1.5rem; line-height: 1.4; }
+
+        /* --- Main App Container (Hidden by default) --- */
+        .main-app { display: none; padding: 2rem; }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e6e6e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .title-group { flex-grow: 1; }
+        header h1 { margin: 0; font-size: 2rem; color: #262730; }
+        header p { margin: 4px 0 0; font-size: 1rem; color: #666; }
+        #logout-button {
+            background-color: #d93025;
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #logout-button:hover { background-color: #b0261e; }
+
+        /* --- Tab Navigation --- */
+        .tab-nav { display: flex; background-color: #f0f2f6; border-bottom: 1px solid #e6e6e6; }
+        .tab-button {
+            padding: 1rem 1.5rem;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #555;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button:hover { background-color: #e6e6e6; }
+        .tab-button.active { color: #0068c9; border-bottom: 2px solid #0068c9; font-weight: 600; }
+
+        /* --- Tab Content --- */
+        .tab-content { display: none; padding: 2rem; }
+        .tab-content.active { display: block; }
+        .tab-content h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+
+        /* --- UI Elements --- */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .kpi-card {
+            background-color: #fafafa;
+            border: 1px solid #e6e6e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .kpi-card .value { font-size: 2.5rem; font-weight: 600; color: #0068c9; margin: 0; }
+        .kpi-card .label { font-size: 1rem; color: #555; margin: 0; }
+        
+        button.action-button {
+            background-color: #0068c9;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 1rem;
+            margin-right: 0.5rem;
+        }
+        button.action-button:hover { background-color: #0056a8; }
+        button.complete-button { background-color: #28a745; }
+        button.complete-button:hover { background-color: #218838; }
+
+        /* --- Table Styling --- */
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 0; }
+        th, td { border: 1px solid #ddd; padding: 0.75rem; text-align: left; }
+        th { background-color: #f4f4f4; font-weight: 600; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr.clickable-alert:hover { background-color: #fffbe6; cursor: pointer; }
+        
+        .spinner { display: none; margin: 1rem 0; color: #555; font-style: italic; }
+        
+        /* --- Modal (Pop-up) Styling --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content .input-group { margin-bottom: 1rem; }
+        .modal-content label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        .modal-content select { width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; }
+        .ai-suggestion {
+            background: #e6f7ff;
+            border: 1px solid #b3e0ff;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .modal-buttons { margin-top: 1.5rem; text-align: right; }
+        .modal-buttons button { margin-left: 0.5rem; }
+        
+        /* --- ROLE-BASED ACCESS CONTROL (CSS) --- */
+        
+        /* Operator: Hide Scheduling and Reporting */
+        .main-app[data-role="operator"] .tab-button[data-tab="scheduling"],
+        .main-app[data-role="operator"] .tab-button[data-tab="reporting"] { display: none; }
+        
+        /* Manager: Hide Maintenance and Reporting */
+        .main-app[data-role="manager"] .tab-button[data-tab="maintenance"],
+        .main-app[data-role="manager"] .tab-button[data-tab="reporting"] { display: none; }
+        
+        /* Hide Admin-only buttons from Manager and Operator */
+        .main-app[data-role="manager"] #run-maintenance-btn,
+        .main-app[data-role="manager"] #run-schedule-btn,
+        .main-app[data-role="operator"] #run-maintenance-btn,
+        .main-app[data-role="operator"] #run-schedule-btn { display: none; }
+        
+        /* Hide Operator-only button from others */
+        .main-app[data-role="admin"] #operator-reassign-btn,
+        .main-app[data-role="manager"] #operator-reassign-btn { display: none; }
+
+        /* Hide Manager-only button from others */
+        .main-app[data-role="admin"] #manager-reoptimize-btn,
+        .main-app[data-role="operator"] #manager-reoptimize-btn { display: none; }
+
+
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay" style="display: flex;">
+        <div id="login-box">
+            <h2>System Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="role">Select Role</label>
+                    <select id="role" name="role">
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="operator">Operator</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password">
+                </div>
+                <button type="submit" class="login-button">Login</button>
+                <p id="login-error">Invalid credentials for the selected role.</p>
+                <div id="login-hint">
+                    **For Presentation:**<br>
+                    Admin: `admin` / `1111`<br>
+                    Manager: `manager` / `2222`<br>
+                    Operator: `operator` / `3333`
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="main-app" data-role="">
+        <div class="container">
+            <header>
+                <div class="title-group">
+                    <h1>🏭 AI for Manufacturing Process Optimization</h1>
+                    <p id="panel-subtitle">Prototype based on SRS v1.0</p>
+                </div>
+                <button id="logout-button">Logout</button>
+            </header>
+
+            <nav class="tab-nav">
+                <button class="tab-button active" data-tab="dashboard" onclick="showTab(event, 'dashboard')">Dashboard</button>
+                <button class="tab-button" data-tab="maintenance" onclick="showTab(event, 'maintenance')">Predictive Maintenance</button>
+                <button class="tab-button" data-tab="scheduling" onclick="showTab(event, 'scheduling')">Job Scheduling</button>
+                <button class="tab-button" data-tab="reporting" onclick="showTab(event, 'reporting')">Reporting</button>
+            </nav>
+
+            <div id="dashboard" class="tab-content active">
+                <h2>KPI Dashboard</h2>
+                <div class="kpi-container">
+                    <div class="kpi-card">
+                        <p class="value">20</p>
+                        <p class="label">Machines Monitored</p>
+                    </div>
+                    <div class="kpi-card">
+                        <p class="value" id="kpi-alerts">0</p>
+                        <p class="label">Active High-Priority Alerts</p>
+                    </div>
+                    <div class="kpi-card">
+                        <p class="value">50</p>
+                        <p class="label">Jobs in Queue</p>
+                    </div>
+                    <div class="kpi-card">
+                        <p class="value" id="kpi-jobs-done">0%</p>
+                        <p class="label">Job Completion</p>
+                    </div>
+                </div>
+                <h3>Active Alerts</h3>
+                <p id="dashboard-alert-placeholder">No data. Admin must "Run Predictive Analysis" to generate alerts.</p>
+                <div class="table-container" style="max-height: 250px;">
+                    <table id="dashboard-alert-table" style="display: none;">
+                        <thead><tr><th>Machine ID</th><th>Predicted Issue</th><th>Severity</th><th>Status</th></tr></thead>
+                        <tbody id="dashboard-alert-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="maintenance" class="tab-content">
+                <h2>Predictive Maintenance</h2>
+                <button class="action-button" id="run-maintenance-btn" onclick="runMaintenance()">Run AI Predictive Analysis</button>
+                <div id="maintenance-spinner" class="spinner">Analyzing machine data...</div>
+                <h3>System Alerts</h3>
+                <p id="maintenance-alert-placeholder">Click the button to run analysis and generate alerts.</p>
+                <div class="table-container">
+                    <table id="maintenance-alert-table" style="display: none;">
+                        <thead><tr><th>Machine ID</th><th>Predicted Issue</th><th>Severity</th><th>Predicted Failure (hrs)</th><th>Status</th></tr></thead>
+                        <tbody id="maintenance-alert-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="scheduling" class="tab-content">
+                <h2>Job Scheduling Optimization</h2>
+                <button class="action-button" id="run-schedule-btn" onclick="runScheduling()">Run AI Schedule Optimization</button>
+                <button class="action-button" id="manager-reoptimize-btn" onclick="showManagerModal()">Re-Optimize Schedule (AI Suggestion)</button>
+                
+                <div id="scheduling-spinner" class="spinner">Calculating optimal schedule...</div>
+                <h3>Optimized Schedule (50 Jobs)</h3>
+                <p id="schedule-placeholder">Click "Run AI Schedule Optimization" (as Admin) to create the job list.</p>
+                
+                <div class="table-container">
+                    <table id="schedule-table" style="display: none;">
+                        <thead><tr><th>Job ID</th><th>Machine ID</th><th>Start Time (Hour)</th><th>End Time (Hour)</th><th>Status</th></tr></thead>
+                        <tbody id="schedule-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reporting" class="tab-content">
+                <h2>Generate Reports</h2>
+                <p>Click the buttons to download a CSV report based on the data in the other tabs.</p>
+                <button class="action-button" onclick="generateMachineReport()">Download Machine Alert Report (CSV)</button>
+                <button class="action-button" onclick="generateJobReport()">Download Job Schedule Report (CSV)</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="operator-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Re-assign Job from Failing Machine</h3>
+            <p>Machine <strong>M-018</strong> is predicted to fail. It is currently assigned Job <strong>J-045</strong>.</p>
+            <div class="input-group">
+                <label for="operator-machine-select">Select a new machine for Job J-045:</label>
+                <select id="operator-machine-select" onchange="showOperatorAISuggestion()">
+                    <option value="">-- Select Machine --</option>
+                    <option value="M-002">M-002</option>
+                    <option value="M-005">M-005</option>
+                    <option value="M-012">M-012</option>
+                </select>
+                <div class="ai-suggestion" id="operator-ai-suggestion" style="display: none;">
+                    <strong>💡 AI Suggestion:</strong> Machine <strong>M-005</strong> is 20% more efficient for this job type and is available.
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="hideOperatorModal()">Cancel</button>
+                <button class="action-button" onclick="confirmOperatorReassign()">Confirm Re-assignment</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manager-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>AI Schedule Re-Optimization</h3>
+            <p>The AI has analyzed the current schedule and found a more efficient sequence.</p>
+            <div style="display: flex; gap: 1rem;">
+                <div style="flex: 1; border: 1px solid #ccc; padding: 1rem; border-radius: 6px;">
+                    <strong>Current Schedule</strong><br>
+                    - Total Idle Time: 45 Hours<br>
+                    - Efficiency: 88%<br>
+                    - Conflicts: 2
+                </div>
+                <div style="flex: 1; border: 1px solid #28a745; background: #f0fff4; padding: 1rem; border-radius: 6px;">
+                    <strong>💡 AI Recommended</strong><br>
+                    - Total Idle Time: 32 Hours<br>
+                    - Efficiency: 92%<br>
+                    - Conflicts: 0
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="hideManagerModal()">Cancel</button>
+                <button class="action-button" onclick="confirmManagerReoptimize()">Accept AI Schedule</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DATA STATE (Source of Truth) ---
+        let maintenanceRun = false;
+        let scheduleRun = false;
+        const totalJobs = 50;
+        const totalMachines = 20;
+        
+        // Data for Predictive Maintenance
+        const alertData = [
+            { id: "M-018", issue: "High Temp/Vibration", severity: "High", time: 10.4, status: "New", clickable: true },
+            { id: "M-003", issue: "High Temp", severity: "Medium", time: 22.1, status: "New", clickable: false },
+            { id: "M-007", issue: "Overload", severity: "Medium", time: 48.0, status: "New", clickable: false },
+            { id: "M-011", issue: "High Temp", severity: "Low", time: 72.0, status: "New", clickable: false },
+            { id: "M-015", issue: "Vibration Spike", severity: "High", time: 4.5, status: "New", clickable: false }
+        ];
+        
+        // Data for Job Schedule (Auto-generated)
+        let jobData = [];
+        function generateJobData() {
+            jobData = []; // Clear old data
+            let machines = Array.from({length: totalMachines}, (_, i) => `M-${String(i + 1).padStart(2, '0')}`);
+            let currentStartTime = 0;
+            for (let i = 1; i <= totalJobs; i++) {
+                let duration = Math.floor(Math.random() * 5) + 2; // 2-6 hours
+                let machine = machines[Math.floor(Math.random() * machines.length)];
+                jobData.push({
+                    id: `J-${String(i).padStart(3, '0')}`,
+                    machine: machine,
+                    start: currentStartTime,
+                    end: currentStartTime + duration,
+                    status: "Pending"
+                });
+                currentStartTime += duration;
+            }
+            // Manually set one job for the Operator demo
+            jobData[44].id = "J-045";
+            jobData[44].machine = "M-018";
+        }
+
+        // --- LOGIN & LOGOUT LOGIC ---
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let user = document.getElementById('username').value;
+            let pass = document.getElementById('password').value;
+            let role = document.getElementById('role').value;
+            let errorMsg = document.getElementById('login-error');
+            
+            let loggedInRole = null;
+
+            if (role === 'admin' && user === 'admin' && pass === '1111') loggedInRole = 'admin';
+            else if (role === 'manager' && user === 'manager' && pass === '2222') loggedInRole = 'manager';
+            else if (role === 'operator' && user === 'operator' && pass === '3333') loggedInRole = 'operator';
+
+            if (loggedInRole) {
+                document.getElementById('login-overlay').style.display = 'none';
+                let mainApp = document.querySelector('.main-app');
+                mainApp.style.display = 'block';
+                
+                mainApp.setAttribute('data-role', loggedInRole);
+                let roleName = loggedInRole.charAt(0).toUpperCase() + loggedInRole.slice(1);
+                document.getElementById('panel-subtitle').innerText = `Prototype based on SRS v1.0 (${roleName} Panel)`;
+                
+                showTab(null, 'dashboard'); 
+                errorMsg.style.display = 'none';
+                
+                // Pre-run simulations for Manager/Operator so they see data
+                if (loggedInRole === 'manager' || loggedInRole === 'operator') {
+                    runMaintenance(true); // silent run
+                    runScheduling(true); // silent run
+                }
+                
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => location.reload());
+
+        // --- Tab Switching Logic ---
+        function showTab(event, tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            
+            let activeTabBtn = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+            if(activeTabBtn) activeTabBtn.classList.add('active');
+        }
+
+        // --- Simulation Logic: Predictive Maintenance ---
+        function runMaintenance(silent = false) {
+            if (!silent) {
+                document.getElementById('maintenance-spinner').style.display = 'block';
+                document.getElementById('maintenance-alert-placeholder').style.display = 'none';
+                document.getElementById('maintenance-alert-table').style.display = 'none';
+            }
+
+            setTimeout(() => {
+                maintenanceRun = true;
+                if (!silent) document.getElementById('maintenance-spinner').style.display = 'none';
+                
+                let maintenanceTbody = document.getElementById('maintenance-alert-body');
+                let dashboardTbody = document.getElementById('dashboard-alert-body');
+                maintenanceTbody.innerHTML = '';
+                dashboardTbody.innerHTML = '';
+
+                alertData.forEach(alert => {
+                    let rowClass = alert.clickable ? 'clickable-alert' : '';
+                    let clickEvent = alert.clickable ? 'onclick="showOperatorModal()"' : '';
+                    
+                    let row1 = `<tr class="${rowClass}" ${clickEvent}>
+                        <td>${alert.id}</td><td>${alert.issue}</td>
+                        <td>${alert.severity}</td><td>${alert.time}</td>
+                        <td>${alert.status}</td>
+                    </tr>`;
+                    maintenanceTbody.innerHTML += row1;
+                    
+                    let row2 = `<tr><td>${alert.id}</td><td>${alert.issue}</td><td>${alert.severity}</td><td>${alert.status}</td></tr>`;
+                    dashboardTbody.innerHTML += row2;
+                });
+
+                document.getElementById('maintenance-alert-table').style.display = 'table';
+                document.getElementById('dashboard-alert-table').style.display = 'table';
+                document.getElementById('dashboard-alert-placeholder').style.display = 'none';
+                document.getElementById('kpi-alerts').innerText = alertData.length;
+            }, silent ? 0 : 1000);
+        }
+
+        // --- Simulation Logic: Job Scheduling ---
+        function runScheduling(silent = false) {
+            if (!silent) {
+                document.getElementById('scheduling-spinner').style.display = 'block';
+                document.getElementById('schedule-placeholder').style.display = 'none';
+                document.getElementById('schedule-table').style.display = 'none';
+            }
+
+            setTimeout(() => {
+                scheduleRun = true;
+                if (!silent) document.getElementById('scheduling-spinner').style.display = 'none';
+                
+                generateJobData(); // Create 50 new jobs
+                updateJobCompletionKPI();
+                
+                let scheduleTbody = document.getElementById('schedule-table-body');
+                scheduleTbody.innerHTML = '';
+                jobData.forEach(job => {
+                    let row = `<tr>
+                        <td>${job.id}</td><td>${job.machine}</td>
+                        <td>${job.start}</td><td>${job.end}</td>
+                        <td class="job-status">${job.status}</td>
+                    </tr>`;
+                    scheduleTbody.innerHTML += row;
+                });
+
+                document.getElementById('schedule-table').style.display = 'table';
+                document.getElementById('schedule-placeholder').style.display = 'none';
+            }, silent ? 0 : 800);
+        }
+
+        // --- Simulation Logic: Job Completion ---
+        function updateJobCompletionKPI() {
+            let completedJobs = jobData.filter(j => j.status !== 'Pending').length;
+            let percentage = (completedJobs / totalJobs) * 100;
+            document.getElementById('kpi-jobs-done').innerText = `${Math.round(percentage)}%`;
+        }
+        
+        // --- MODAL (POPUP) LOGIC ---
+        
+        // Operator Modal
+        function showOperatorModal() {
+            document.getElementById('operator-modal').style.display = 'flex';
+        }
+        function hideOperatorModal() {
+            document.getElementById('operator-modal').style.display = 'none';
+            document.getElementById('operator-ai-suggestion').style.display = 'none';
+            document.getElementById('operator-machine-select').value = '';
+        }
+        function showOperatorAISuggestion() {
+            document.getElementById('operator-ai-suggestion').style.display = 'block';
+        }
+        function confirmOperatorReassign() {
+            alert("Job J-045 successfully reassigned from M-018 to M-005.\nAn admin will be notified to update the schedule.");
+            hideOperatorModal();
+        }
+
+        // Manager Modal
+        function showManagerModal() {
+            if (!scheduleRun) {
+                alert("Please have an Admin 'Run AI Schedule Optimization' first.");
+                return;
+            }
+            document.getElementById('manager-modal').style.display = 'flex';
+        }
+        function hideManagerModal() {
+            document.getElementById('manager-modal').style.display = 'none';
+        }
+        function confirmManagerReoptimize() {
+            alert("AI Schedule Accepted! The job list has been re-optimized.");
+            // Here you would re-run the scheduling, but for a demo, just closing is fine.
+            hideManagerModal();
+        }
+        
+        // --- REPORTING LOGIC ---
+        function downloadCSV(csvContent, filename) {
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            if (link.download !== undefined) {
+                let url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function generateMachineReport() {
+            if (!maintenanceRun) {
+                alert("Please have an Admin 'Run AI Predictive Analysis' first.");
+                return;
+            }
+            let csv = "Machine ID,Predicted Issue,Severity,Predicted Failure (hrs),Status\n";
+            alertData.forEach(row => csv += `${row.id},"${row.issue}",${row.severity},${row.time},${row.status}\n`);
+            downloadCSV(csv, "machine_alert_report.csv");
+        }
+        
+        function generateJobReport() {
+            if (!scheduleRun) {
+                alert("Please have an Admin 'Run AI Schedule Optimization' first.");
+                return;
+            }
+            let csv = "Job ID,Machine ID,Start Time (Hour),End Time (Hour),Status\n";
+            jobData.forEach(row => csv += `${row.id},${row.machine},${row.start},${row.end},"${row.status}"\n`);
+            downloadCSV(csv, "job_schedule_report.csv");
+        }
+    </script>
+
+</body>
+</html>
